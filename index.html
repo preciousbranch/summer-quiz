@@ -1,67 +1,347 @@
 <!DOCTYPE html>
-const exp = document.createElement('div'); exp.className='exp'; exp.innerHTML = '<b>解説：</b>' + (item.e||'');
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>夏期課題100問クイズ</title>
+<style>
+  :root { --fg:#111; --muted:#666; --bg:#fff; --acc:#0a7; --err:#c00; --ok:#0a0; }
+  html,body{ height:100%; background:var(--bg); color:var(--fg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; }
+  .app{ max-width: 880px; margin: 0 auto; padding: 16px; }
+  header{ position: sticky; top: 0; background: rgba(255,255,255,.95); backdrop-filter: saturate(150%) blur(6px); padding: 12px 0; z-index: 5; border-bottom: 1px solid #eee; }
+  h1{ font-size: 20px; margin: 0 0 6px; }
+  .bar{ height: 8px; background:#eee; border-radius: 999px; overflow: hidden; }
+  .bar>i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,#27ae60,#2ecc71); transition: width .3s ease; }
+  .meta{ display:flex; gap:12px; align-items:center; font-size:12px; color:var(--muted); }
+  .card{ margin:16px 0; padding:16px; border:1px solid #eee; border-radius:14px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+  .qno{ font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .q{ font-size: 18px; line-height: 1.5; margin: 4px 0 12px; }
+  .choices{ list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+  .choices li{ border:1px solid #ddd; border-radius:12px; padding:12px; font-size:16px; line-height:1.4; background:#fafafa; }
+  .choices button{ width:100%; border:0; background:transparent; text-align:left; font: inherit; color:inherit; padding:0; }
+  .choices li.correct{ border-color: var(--ok); background: #f3fff3; }
+  .choices li.wrong{ border-color: var(--err); background: #fff6f6; }
+  .rmark{ font-weight:700; margin-right:8px; }
+  .exp{ margin-top:12px; padding:12px; border-left:4px solid #ddd; background:#f7f7f7; border-radius:10px; font-size:14px; display:none; }
+  .exp.show{ display:block; }
+  .nav{ display:flex; gap:10px; margin-top:12px; }
+  .nav button{ flex:1; padding:12px; font-size:16px; border-radius:12px; border:1px solid #ddd; background:#fff; }
+  .nav button.primary{ background: #0a7; color:#fff; border-color:#0a7; }
+  .muted{ color:var(--muted); font-size:12px; }
+  .footer{ margin-top:28px; color:var(--muted); font-size:12px; }
+  .hide{ display:none; }
+  .result{ text-align:center; padding:24px; }
+  .result h2{ margin: 0 0 8px; }
+  .pill{ display:inline-block; padding:4px 10px; border-radius:999px; background:#eef; font-size:12px; margin-left:8px; }
+  .ctrls{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
+  .ctrls button{ padding:8px 12px; border:1px solid #ddd; background:#fff; border-radius:999px; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>夏期課題100問クイズ <span id="modePill" class="pill">学習モード</span></h1>
+    <div class="meta"><span id="progressText">0 / 100</span><span>正答：<b id="score">0</b></span>
+      <div class="ctrls">
+        <button id="btnShuffle">順番をシャッフル</button>
+        <button id="btnToggleMode">学習⇄試験</button>
+        <button id="btnRestart">最初から</button>
+      </div>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+  </header>
 
+  <section id="quiz"></section>
+  <section id="done" class="card result hide">
+    <h2>お疲れさまです！</h2>
+    <p>スコア：<b id="finalScore">0 / 100</b></p>
+    <p class="muted">「最初から」を押すと、やり直しできます。</p>
+  </section>
 
-const nav = document.createElement('div'); nav.className='nav';
-const next = document.createElement('button'); next.className='primary'; next.textContent = '次へ'; next.disabled = true;
-const back = document.createElement('button'); back.textContent = '戻る'; back.disabled = (idx===0);
+  <p class="footer">・正解時は「◯」を表示。正誤に関わらず解説が表示されます。<br>・iPhone Safari互換（インストール不要・オフライン不可）。ホーム画面に追加する場合はSafariの共有メニュー →「ホーム画面に追加」。</p>
+</div>
 
+<script>
+(function(){
+  const qbank = [
+    // === 国語表現法（5） ===
+    {q:"英語に『敬語の文法』はない。() 英語にも丁寧な表現はある。", c:["つまり","しかし","そして","だから"], a:1, e:"対立関係を示すため『しかし』。"},
+    {q:"彼のレポートは着眼点が面白い。() ものの見方、視点が独特なのだ。", c:["だから","つまり","しかも","そして"], a:1, e:"前文の言い換え＝『つまり』。"},
+    {q:"記者は資料を読み込んでいた。() 質問も鋭かった。", c:["しかし","しかも","だから","つまり"], a:1, e:"付加＝『しかも』。"},
+    {q:"現存している作品は少ない。() 寡作だったからなおさら希少だ。", c:["だから","しかし","そして","つまり"], a:0, e:"因果＝『だから』。"},
+    {q:"鎮痛剤を処方してもらった。() 痛みがひどくなければ飲まないように言われた。", c:["そして","ただし","だから","つまり"], a:1, e:"条件付きの但し書き＝『ただし』。"},
 
-next.addEventListener('click',()=>{ idx++; update(); });
-back.addEventListener('click',()=>{ if(idx>0){ idx--; update(); } });
+    // === 情報リテラシー（5） ===
+    {q:"ファイルとは、PCの音楽・写真・文書などの()の記録物。", c:["情報","データベース","ソフトウェア","装置"], a:0, e:"『情報の記録物』。"},
+    {q:"フォルダとは、さまざまなファイルを保管する()。", c:["場所(入れ物)","共有設定","検索機能","拡張子"], a:0, e:"『入れ物』のこと。"},
+    {q:"盗用とは、他人の所有物や成果を()で使用すること。", c:["無断","引用","複製","販売"], a:0, e:"無断使用＝盗用。"},
+    {q:"剽窃とは、他人の作品を盗んで、()のものとして発表すること。", c:["自分","共同","匿名","著者"], a:0, e:"自分のものとして発表＝剽窃。"},
+    {q:"盗用・剽窃は何の侵害にも当たる？", c:["著作権","肖像権","所有権","意匠権"], a:0, e:"著作権侵害。"},
 
+    // === 医療倫理学（4） ===
+    {q:"『罪と罰』を規定する基本法は？", c:["民法","刑法","商法","行政法"], a:1, e:"刑法が犯罪と刑罰を規定。"},
+    {q:"『身分と財産』を規定する基本法は？", c:["民法","刑法","憲法","労基法"], a:0, e:"身分・財産＝民法。"},
+    {q:"死亡に伴い財産関係が包括移転することは？", c:["譲渡","贈与","相続","遺留"], a:2, e:"包括承継＝相続。"},
+    {q:"相続が規定される法は？", c:["刑法","民法","医師法","税法"], a:1, e:"相続規定は民法。"},
 
-nav.appendChild(back); nav.appendChild(next);
+    // === 健康社会学（8） ===
+    {q:"健康なまち：住民が()に健康づくりへ参加。", c:["主体的","受動的","強制的","形式的"], a:0, e:"主体的参加。"},
+    {q:"活動を通じて自らの()の価値を学ぶ。", c:["健康","労働","経済","教育"], a:0, e:"健康の価値。"},
+    {q:"活動を通じて()の大切さを知る。", c:["連帯","競争","独立","管理"], a:0, e:"連帯の大切さ。"},
+    {q:"活動を通じて()の豊かさを味わう。", c:["文化","資本","技術","政治"], a:0, e:"文化の豊かさ。"},
+    {q:"活動を通じて()の意義を学ぶ。", c:["自然","市場","規制","監視"], a:0, e:"自然の意義。"},
+    {q:"そして()を実感できる。", c:["人生","名誉","効率","成長"], a:0, e:"人生を実感。"},
+    {q:"HPH：患者だけでなく医療スタッフと()にも健康づくり。", c:["地域住民","行政","企業","学校"], a:0, e:"地域住民にも。"},
+    {q:"HPH：組織を『()な組織』へ変革。", c:["学習的","階層的","権威的","閉鎖的"], a:0, e:"学習的組織。"},
 
+    // === 生物学（9） ===
+    {q:"ペプチド結合形成時に脱離する分子は？", c:["CO2","水(H2O)","O2","NH3"], a:1, e:"縮合で水が外れる。"},
+    {q:"結合する2つの分子は何の酸？", c:["脂肪酸","アミノ酸","核酸","有機酸"], a:1, e:"アミノ酸同士が結合。"},
+    {q:"この結合の名称は？", c:["エステル結合","ペプチド結合","糖結合","水素結合"], a:1, e:"アミド結合＝ペプチド結合。"},
+    {q:"ヒトの染色体数は？", c:["44本","46本","48本","52本"], a:1, e:"体細胞で46本。"},
+    {q:"形態学的に定義された細胞死は？", c:["ネクローシス","オートファジー","アポトーシス","フェロトーシス"], a:2, e:"形態学的特徴からの用語。"},
+    {q:"セントラルドグマの順序は？", c:["DNA→タンパク→RNA","RNA→DNA→タンパク","DNA→RNA→タンパク","タンパク→RNA→DNA"], a:2, e:"DNA→RNA→タンパク質。"},
+    {q:"DNAを合成する酵素は？", c:["RNAポリメラーゼ","DNAポリメラーゼ","逆転写酵素","DNAリガーゼ"], a:1, e:"DNAポリメラーゼ。"},
+    {q:"DNA量の増減を示すグラフが表す分裂は？", c:["減数分裂","有糸分裂","無糸分裂","二分裂"], a:1, e:"G1→S→G2→Mの有糸分裂。"},
+    {q:"2'位にOHがある構造式はDNA/RNAどちら？", c:["DNA","RNA","どちらでもない","tRNAのみ"], a:1, e:"2'OH＝リボース＝RNA。"},
 
-card.appendChild(qno); card.appendChild(q); card.appendChild(ul); card.appendChild(exp); card.appendChild(nav);
-$quiz.appendChild(card);
+    // === 化学（12） ===
+    {q:"各元素を構成する基本粒子の集合体＝？", c:["原子","分子","陽子","同位体"], a:0, e:"基本粒子の集合＝原子。"},
+    {q:"原子は原子核と何から成る？", c:["陽子","中性子","電子","イオン"], a:2, e:"核外電子。"},
+    {q:"原子核は陽子と何？", c:["陽電子","中性子","電子","光子"], a:1, e:"陽子＋中性子。"},
+    {q:"陽子の電荷は？", c:["正","負","中性","二重正"], a:0, e:"＋1。"},
+    {q:"同元素で性質が異なる単体同士＝？", c:["同位体","同素体","同量体","異性体"], a:1, e:"酸素とオゾンなど。"},
+    {q:"モルは物質量の何単位？", c:["相対","基本","補助","派生"], a:1, e:"SI基本単位（物質量）。"},
+    {q:"6.02×10^23の数を何という？", c:["ファラデー定数","アボガドロ数","ボルツマン定数","プランク定数"], a:1, e:"アボガドロ数。"},
+    {q:"pHは何の『ものさし』？", c:["酸化還元電位","水素イオン濃度指数","浸透圧","塩濃度"], a:1, e:"水素イオン濃度指数。"},
+    {q:"中性のpHは？", c:["5","6","7","8"], a:2, e:"25℃でpH7。"},
+    {q:"P×V=一定の法則は？", c:["ボイルの法則","シャルルの法則","ヘンリーの法則","ファラデーの法則"], a:0, e:"等温でPV一定。"},
+    {q:"元素表記の上の数字(例:16)は？", c:["原子番号","質量数","価数","同位体番号"], a:1, e:"質量数。"},
+    {q:"元素表記の下の数字(例:8)は？", c:["原子番号","質量数","価数","同位体番号"], a:0, e:"原子番号＝陽子数。"},
 
+    // === 解剖学・歯の解剖学（15） ===
+    {q:"骨断面：スポンジ状の内部＝？", c:["皮質骨","骨髄腔","海綿骨","骨膜"], a:2, e:"小柱構造＝海綿骨。"},
+    {q:"骨断面：中央の空所＝？", c:["骨髄腔","ハバース管","骨梁","骨端線"], a:0, e:"骨髄がある腔。"},
+    {q:"骨断面：外側の緻密な層＝？", c:["海綿骨","皮質骨","骨端軟骨","骨膜"], a:1, e:"皮質骨。"},
+    {q:"人体の3断面：左右に分ける面は？", c:["水平断","矢状断","前額断","斜断"], a:1, e:"矢状断。"},
+    {q:"人体の3断面：前後に分ける面は？", c:["前額断","水平断","矢状断","放射断"], a:0, e:"冠状断＝前額断。"},
+    {q:"人体の3断面：上下に分ける面は？", c:["前額断","水平断","矢状断","傍矢状断"], a:1, e:"水平断。"},
+    {q:"23個の骨からなる部分の総称は？", c:["上肢骨","頭蓋骨","体幹骨","下肢骨"], a:1, e:"頭蓋骨(脳+顔面)。"},
+    {q:"食物を栄養素に分解する過程＝？", c:["吸収","消化","代謝","排泄"], a:1, e:"機械的・化学的消化。"},
+    {q:"消化産物を血管・リンパ管に送り込む過程＝？", c:["吸収","同化","異化","排泄"], a:0, e:"小腸から吸収。"},
+    {q:"側頭骨の突起：矢印部は？", c:["茎状突起","関節突起","筋突起","乳様突起"], a:0, e:"茎状突起。"},
+    {q:"茎状突起過長で起こる病態は？", c:["リガ・フェーデ病","茎状突起過長症(Eagle)","顎関節症","口蓋裂"], a:1, e:"Eagle症候群。"},
+    {q:"乳歯の萌出開始は生後何か月？", c:["3か月","6か月","9か月","12か月"], a:1, e:"約6か月から。"},
+    {q:"乳歯の総数は？", c:["16本","18本","20本","24本"], a:2, e:"上下各10で20本。"},
+    {q:"乳歯の脱落開始はおよそ何歳？", c:["4歳","6歳","8歳","10歳"], a:1, e:"6歳頃開始。"},
+    {q:"先天歯で舌に潰瘍：病名は？", c:["口内炎","リガ・フェーデ病","手足口病","ヘルパンギーナ"], a:1, e:"先天歯刺激。"},
+    {q:"乳歯列の生理的空隙：上顎BC間などの空隙名は？", c:["発育空隙","霊長空隙","保隙","顎間空隙"], a:1, e:"霊長空隙。"},
+    {q:"歯の形態学的特徴：()形態と呼ばれる強度的構造。", c:["トラス","ハニカム","格子","梁"], a:0, e:"トラス形態。"},
 
-function select(choiceIndex, li){
-if(answered[qi]) return;
-answered[qi] = true;
-const lis = ul.querySelectorAll('li');
-lis.forEach((el,i)=>{
-const isCorrect = correct.includes(i);
-if(isCorrect) el.classList.add('correct');
-if(i===choiceIndex && !isCorrect) el.classList.add('wrong');
-});
-const mark = document.createElement('span'); mark.className='rmark';
-const ok = correct.includes(choiceIndex);
-mark.textContent = ok ? '◯' : '×'; mark.style.color = ok ? 'var(--ok)' : 'var(--err)';
-li.prepend(mark);
-if(ok){ score++; $score.textContent = score; }
-exp.classList.add('show');
-next.disabled = false;
-}
+    // === 生理学（16） ===
+    {q:"心臓の起電部位(ペースメーカー)は？", c:["房室結節","ヒス束","プルキンエ線維","洞房結節"], a:3, e:"洞房結節。"},
+    {q:"血管損傷部で凝集し栓子形成するのは？", c:["赤血球","白血球","血小板","好酸球"], a:2, e:"血小板。"},
+    {q:"外界と血液のガス交換＝()呼吸。", c:["外","内","組織","細胞"], a:0, e:"肺での外呼吸。"},
+    {q:"細胞と血液のガス交換＝()呼吸。", c:["外","内","肺","組織"], a:1, e:"組織での内呼吸。"},
+    {q:"泌尿器の構成：腎臓・尿管・()・尿道。", c:["胆嚢","膀胱","前立腺","副腎"], a:1, e:"膀胱を含む。"},
+    {q:"胃主細胞が分泌するのは？", c:["ペプシノーゲン","胃酸(HCl)","内因子","粘液"], a:0, e:"主細胞→ペプシノーゲン。"},
+    {q:"胃壁細胞が分泌するのは？", c:["ペプシノーゲン","粘液","HClと内因子","ガストリン"], a:2, e:"塩酸と内因子。"},
+    {q:"外分泌腺の分泌物はどこへ？", c:["血中","腺外(管を通じ体外/消化管)","細胞核","リンパ節"], a:1, e:"導管で外へ。"},
+    {q:"内分泌腺の分泌物は何と呼ぶ？", c:["消化液","サイトカイン","ホルモン","胆汁"], a:2, e:"ホルモン。"},
+    {q:"体温：外気に影響少ない温度＝？", c:["表面温度","深部温度","平均体温","腋窩温"], a:1, e:"深部温度。"},
+    {q:"一般生活で熱産生が最大の臓器は？", c:["筋","肝臓","脳","腎臓"], a:1, e:"肝臓が最大。"},
+    {q:"熱産生で2位の臓器は？", c:["心臓","筋","脳","腎臓"], a:1, e:"次いで骨格筋。"},
+    {q:"水分蒸散：皮膚からの()と発汗がある。", c:["不感蒸泄","呼気","腎排泄","涙液"], a:0, e:"不感蒸泄と発汗。"},
+    {q:"糸球体ろ過：能動/受動？", c:["能動輸送","受動輸送","共輸送","交換拡散"], a:1, e:"圧力差による受動。"},
+    {q:"タンパク質は糸球体でろ過される？", c:["される","されない","半分だけ","条件次第"], a:1, e:"分子が大きく負電荷で通りにくい。"},
 
+    // === 組織・発生学（18） ===
+    {q:"細胞膜：リン脂質()層＋膜()。", c:["単/糖","二/タンパク質","三/糖","二/脂質"], a:1, e:"二重層＋膜タンパク質。"},
+    {q:"ミトコンドリアで合成されるエネルギー物質は？", c:["ATP","GTP","NADH","乳酸"], a:0, e:"酸化的リン酸化でATP。"},
+    {q:"リボソームで合成されるのは？", c:["脂質","タンパク質","糖","DNA"], a:1, e:"翻訳によりタンパク質合成。"},
+    {q:"遺伝子：DNAのうち()の種類を決める部分。", c:["脂質","糖","タンパク質","代謝物"], a:2, e:"タンパク質の一次構造を規定。"},
+    {q:"体細胞分裂で1細胞→何細胞？", c:["1つ","2つ","4つ","無数"], a:1, e:"2娘細胞。"},
+    {q:"分裂装置に現れる構造は？", c:["中間径フィラメント","紡錘体","微絨毛","デスモソーム"], a:1, e:"紡錘体。"},
+    {q:"体細胞が分裂して増殖する一連の周期＝？", c:["概日リズム","細胞周期","分裂期","増殖帯"], a:1, e:"細胞周期。"},
+    {q:"鼻腔粘膜の組織学的上皮は？", c:["重層扁平上皮","多列線毛円柱上皮","移行上皮","単層立方上皮"], a:1, e:"呼吸上皮。"},
+    {q:"一般的結合組織の主成分：()線維と()細胞。", c:["弾性/肥満","膠原/線維芽","網/形質","膠原/マクロファージ"], a:1, e:"膠原線維＋線維芽細胞。"},
+    {q:"骨改造をカタカナで？", c:["レモデリング","リモデリング","ラミナ","ランゲル"], a:1, e:"リモデリング。"},
+    {q:"三胚葉：()胚葉・中胚葉・内胚葉。", c:["外","内","間","胎"], a:0, e:"外・中・内。"},
+    {q:"骨は三胚葉のどれ由来？", c:["外胚葉","中胚葉","内胚葉","いずれでもない"], a:1, e:"中胚葉性。"},
+    {q:"表皮・爪・毛の由来は？", c:["外胚葉","中胚葉","内胚葉","内外両方"], a:0, e:"外胚葉性。"},
+    {q:"胎盤の役割(ホルモン以外)：", c:["栄養・ガス交換","免疫抑制のみ","造血のみ","排泄のみ"], a:0, e:"栄養・ガス/老廃物交換など。"},
+    {q:"胎盤で産生され、妊娠初期に増加するのは？", c:["LH","FSH","hCG","プロラクチン"], a:2, e:"hCG。"},
+    {q:"hCG測定は何の判定に使う？", c:["排卵","更年期","妊娠","分娩時期"], a:2, e:"妊娠判定。"},
+    {q:"上唇は()鼻突起と()突起の癒合で形成。", c:["外側/下顎","内側/上顎","内側/下顎","外側/上顎"], a:1, e:"内側鼻突起と上顎突起。"},
+    {q:"写真のような上口唇の裂隙は？", c:["口唇裂","口蓋裂","オトガイ裂","頬裂"], a:0, e:"口唇裂。"},
+    {q:"胎生9〜10週の歯胚：矢印部は？", c:["エナメル器","歯乳頭","歯小囊","エナメル髄"], a:0, e:"エナメル器。"},
+    {q:"象牙質と歯髄境界付近：細い管状構造は？", c:["セメント小管","骨小管","象牙細管","エナメル小柱"], a:2, e:"象牙細管。"},
+    {q:"象牙質内面に並ぶ細胞は？", c:["線維芽細胞","象牙芽細胞","骨芽細胞","セメント芽細胞"], a:1, e:"象牙芽細胞。"},
+    {q:"象牙質と()は機能的複合体。空欄は？", c:["歯髄","セメント質","エナメル質","歯根膜"], a:0, e:"象牙質-歯髄複合体。"},
 
-updateHUD();
-}
+    // === 生化学・口腔生化学（14） ===
+    {q:"-CHOは何基？", c:["アミノ基","カルボキシル基","アルデヒド基","ケトン基"], a:2, e:"アルデヒド基。"},
+    {q:"グルコースは何炭糖？", c:["三炭糖","五炭糖","六炭糖","七炭糖"], a:2, e:"六炭糖。"},
+    {q:"二重結合のない脂肪酸＝？", c:["不飽和脂肪酸","飽和脂肪酸","必須脂肪酸","トランス脂肪酸"], a:1, e:"飽和脂肪酸。"},
+    {q:"必須アミノ酸でないものは？", c:["バリン","セリン","ロイシン","リジン"], a:1, e:"セリンは非必須。"},
+    {q:"不足で味覚異常を起こしやすい元素は？", c:["亜鉛","鉄","銅","セレン"], a:0, e:"亜鉛欠乏。"},
+    {q:"ビタミンAは脂溶性/水溶性？", c:["水溶性","脂溶性","どちらでもない","条件により"], a:1, e:"脂溶性。"},
+    {q:"『つくる過程』の代謝＝？", c:["異化","同化","糖新生のみ","β酸化"], a:1, e:"同化(アナボリズム)。"},
+    {q:"栄養素は主にどこから吸収？", c:["胃","小腸粘膜上皮","大腸","口腔"], a:1, e:"小腸上皮。"},
+    {q:"食物中脂質の約95%は？", c:["コレステロール","リン脂質","トリアシルグリセロール","遊離脂肪酸"], a:2, e:"中性脂肪。"},
+    {q:"脂肪酸のβ酸化はミトコンドリアのどこ？", c:["外膜","膜間腔","マトリックス","内膜"], a:2, e:"マトリックス。"},
+    {q:"ヌクレオチドの構成要素でないものは？", c:["糖","リン酸","塩基","アミノ酸"], a:3, e:"アミノ酸は含まれない。"},
+    {q:"同じDNAのコピーを作る過程＝？", c:["翻訳","複製","転写","修復"], a:1, e:"DNA複製。"},
+    {q:"mRNA情報からタンパクが作られる過程＝？", c:["転写","翻訳","複製","逆転写"], a:1, e:"翻訳。"},
 
+    // === 歯科予防処置論I（10） ===
+    {q:"一次・二次・三次予防のうち、健康教育はどれ？", c:["一次","二次","三次","いずれでもない"], a:0, e:"健康教育＝一次予防。"},
+    {q:"二次予防に含まれるのは？", c:["定期的な歯科予防処置","歯牙の固定","顎外科","口腔癌治療"], a:0, e:"スクリーニング/早期治療。"},
+    {q:"三次予防に含まれるのは？", c:["フッ化物洗口","PTC","歯周外科処置","動機づけ"], a:2, e:"機能回復・再発防止。"},
+    {q:"歯周組織に含まれないのは？", c:["歯肉","歯根膜","セメント質","エナメル質"], a:3, e:"エナメル質は歯冠表層。"},
+    {q:"大唾液腺に含まれないのは？", c:["耳下腺","顎下腺","舌下腺","舌後腺"], a:3, e:"主要は耳下・顎下・舌下。"},
+    {q:"FDI記号：乳歯はアルファベットの何？", c:["A〜E","1〜5","I〜V","a〜e"], a:0, e:"乳歯A〜E。"},
+    {q:"嚥下の5期：最初の期は？", c:["咽頭期","食道期","口腔準備期","口腔期"], a:2, e:"咀嚼・食塊形成。"},
+    {q:"う蝕分類：C0は？", c:["健全","初期う蝕(表層脱灰)","象牙質まで","歯冠崩壊"], a:1, e:"白斑など。"},
+    {q:"プラークが石灰化したものは？", c:["ペリクル","食物残渣","歯石","舌苔"], a:2, e:"歯石。"},
+    {q:"健康歯肉の特徴は？", c:["発赤・腫脹","暗紫色・出血","ピンクで引き締まる","排膿"], a:2, e:"スティップリングなど。"},
 
-function updateHUD(){
-$progress.textContent = (idx) + ' / ' + qbank.length;
-const ratio = (idx / qbank.length) * 100; $bar.style.width = ratio + '%';
-}
+    // === 歯科予防処置論II・診療補助I（14） ===
+    {q:"デンタルミラーの役割でないのは？", c:["間接視","軟組織の牽引","照明反射","窩洞形成"], a:3, e:"窩洞形成はバーの役割。"},
+    {q:"う蝕検査用探針の主な用途は？", c:["歯石除去","う窩の性状確認","歯肉切開","印象採得"], a:1, e:"軟化象牙質の確認など。"},
+    {q:"スケーラー把持は何法？", c:["掌握把持","ピンチ把持","ペングラスプ","パームグラスプ"], a:2, e:"ペングラスプ。"},
+    {q:"スケーリングはどの方向へストローク？", c:["歯頸部→歯冠側","歯冠側→歯頸部","遠心→近心","任意"], a:0, e:"歯石の下から歯冠側へ引く。"},
+    {q:"確実な操作のため必ず置くものは？", c:["支点(フィンガーレスト)","綿球","コットンロール","吸唾器"], a:0, e:"支点を確保。"},
+    {q:"器材の受け渡しで正しいものの例は？", c:["鋭利部を患者側へ向ける","術者の手に柄から渡す","術者の背後で渡す","患者越しに渡す"], a:1, e:"安全に柄側を先に。"},
+    {q:"高齢者の加齢性難聴に適切なのは？", c:["高い声で話す","一問一答で短く","後方から大声","文字盤のみ"], a:1, e:"簡潔・明瞭に。"},
+    {q:"可視光線重合器の発光として適切なのは？(2つ)", c:["紫外光","青色光","赤外光","赤色光"], a: [1,3], e:"主に青〜青紫/一部赤色表示灯等。"},
+    {q:"視覚障害者の誘導で適切なのは？", c:["腕を掴むよう促し横に立つ","背中を押す","杖を引く","手を引っ張る"], a:0, e:"腕を提供しペースを合わせる。"},
+    {q:"AEDパッド貼付の正しい位置は？", c:["右鎖骨下＋左腋窩前方","左右対称前胸部","腹部","背部のみ"], a:0, e:"右上胸部＋左側胸部。"},
+    {q:"印象体消毒：適切なのは？(材質により)一般的に", c:["2%グルタラールで浸漬/清拭","8%エタノール","0.1%塩化ベンザルコニウムのみ","水洗のみ"], a:0, e:"材質に応じて次亜塩素酸Naやグルタラール等。"},
+    {q:"吸引器具：主目的が『根管内の乾燥』は？", c:["サクションチップ","唾液吸引管","ペーパーポイント","外科用吸引"], a:2, e:"根管内乾燥はペーパーポイント。"},
+    {q:"パルスオキシメータで測定する部位は？(2つ)", c:["腋窩","耳朶","胸部中央","指先"], a:[1,3], e:"耳朶や指先で末梢SpO2。"},
+    {q:"除細動実施直前の対応は？", c:["脈を触知","患者に触れない","人工呼吸継続","電極を外す"], a:1, e:"ショック時は非接触を声掛けで確認。"},
 
+    // === 歯科診療補助I（追加10） ===
+    {q:"右下臼歯部のバキューム基本：正しいのは？", c:["11時から挿入","切り口を前歯に向ける","本体根元を強握","出水を直接吸引"], a:3, e:"出水・飛散物を確実に吸引。"},
+    {q:"消毒の適応：エタノールが適するのは？", c:["手指","粘膜(高濃度)","器具滅菌","印象材長時間浸漬"], a:0, e:"手指皮膚。粘膜は不可。"},
+    {q:"レジン重合時の安全配慮(2つ)", c:["試照射","換気確認","暗室必須","防護ゴーグル不要"], a:[0,1], e:"光学・化学的安全の確認。"},
+    {q:"口腔外バキュームで主に吸うもの(2つ)", c:["注水噴霧(ミスト)","エアロゾル","切削片","注油"], a:[0,1], e:"ミストやエアロゾルの拡散抑制。"},
+    {q:"インシデント報告で正しい(2つ)", c:["医療安全の取組","原因追及より再発防止","個人責任追及が目的","アクシデントより件数少"], a:[0,1], e:"再発防止の学習。"},
+    {q:"血圧計マンシェット適切装着は？", c:["肘窩の上2〜3cm、動脈マークを合わせる","肘窩中心に巻く","手首に強く巻く","肩に巻く"], a:0, e:"上腕で正しく位置合わせ。"},
+    {q:"診療前に行うべきユニット管理は？", c:["ハンドピースのフラッシング","フィルター交換","オイル注油のみ","何もしない"], a:0, e:"フラッシングで残水除去。"},
+    {q:"印象から模型作製前の感染対策は？", c:["EOG滅菌","10%ホルマリン長時間","材質適合の消毒薬で処理","アルコール噴霧密閉"], a:2, e:"次亜塩素酸Naなど適合薬で消毒。"},
+    {q:"過酸化水素低温プラズマの特徴(2つ)", c:["低温","毎回給水が必要","全行程が長い","切削器具に適"], a:[0,3], e:"低温で鋭利器具に適。"},
+    {q:"滅菌グローブ装着で不潔となる操作は？", c:["外側面に素手で触れる","内側のみ触れる","折り返しを掴む","介助者が補助"], a:0, e:"外側素手接触で不潔。"},
 
-function update(){ render(); }
+    // === 歯科保健指導論I（6） ===
+    {q:"保健指導：対象の()を育て行動変容を促す専門的指導。", c:["主体性","体力","競争心","規律"], a:0, e:"主体性。"},
+    {q:"術前・術中・術後を含む期間を何という？", c:["周術期","観察期","回復期","維持期"], a:0, e:"周術期。"},
+    {q:"WHOの健康定義で正しいのは？", c:["疾病がない状態のみ","完全な身体的・精神的・社会的な健康","医療へのアクセス","平均余命が長いこと"], a:1, e:"WHO定義は『完全な身体的・精神的・社会的な健康』。"},
+    {q:"ヘルスプロモーションで正しい(2つ)", c:["発展途上国限定","健康日本21の基盤","健康のコントロールを可能に","倫理規範のこと"], a:[1,2], e:"HPは自ら健康を管理する力。"},
+    {q:"保健活動：ポピュレーションアプローチ(2つ)", c:["高校生の食育","喫煙者の禁煙指導","糖尿病予備軍の栄養指導","高齢群の口腔機能教室"], a:[0,3], e:"集団全体を対象。"},
+    {q:"面接技法：会話例で用いたのは？(2つ)", c:["傾聴","動機づけ","オープンクエスチョン","クローズド"], a:[0,2], e:"傾聴＋開かれた質問。"}
+  ];
 
+  function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
-document.getElementById('btnShuffle').addEventListener('click',()=>{
-order = shuffle(order); idx = 0; score = 0; answered.fill(false); $score.textContent = '0'; update();
-});
-document.getElementById('btnToggleMode').addEventListener('click',()=>{
-modeExam = !modeExam; $modePill.textContent = modeExam ? '試験モード' : '学習モード';
-});
-document.getElementById('btnRestart').addEventListener('click',()=>{
-idx = 0; score = 0; answered.fill(false); $score.textContent='0'; update();
-});
+  let order = qbank.map((_,i)=>i);
+  let idx = 0;
+  let score = 0;
+  let answered = new Array(qbank.length).fill(false);
+  let modeExam = false;
 
+  const $quiz = document.getElementById('quiz');
+  const $bar  = document.getElementById('bar');
+  const $progress = document.getElementById('progressText');
+  const $score = document.getElementById('score');
+  const $done = document.getElementById('done');
+  const $finalScore = document.getElementById('finalScore');
+  const $modePill = document.getElementById('modePill');
 
-update();
+  function render(){
+    $quiz.innerHTML = '';
+    $done.classList.add('hide');
+    if(idx >= order.length){
+      $done.classList.remove('hide');
+      $finalScore.textContent = score + ' / ' + qbank.length;
+      updateHUD();
+      return;
+    }
+    const qi = order[idx];
+    const item = qbank[qi];
+    const card = document.createElement('div'); card.className='card';
+    const qno = document.createElement('div'); qno.className='qno'; qno.textContent = `Q${idx+1}`;
+    const q = document.createElement('div'); q.className='q'; q.textContent = item.q;
+    const ul = document.createElement('ul'); ul.className='choices';
+
+    const correct = Array.isArray(item.a) ? item.a.slice().sort() : [item.a];
+
+    item.c.forEach((txt,ci)=>{
+      const li=document.createElement('li');
+      const btn=document.createElement('button');
+      btn.setAttribute('type','button');
+      btn.textContent = txt;
+      btn.addEventListener('click',()=> select(ci, li));
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+
+    const exp = document.createElement('div'); exp.className='exp'; exp.innerHTML = '<b>解説：</b>' + (item.e||'');
+
+    const nav = document.createElement('div'); nav.className='nav';
+    const next = document.createElement('button'); next.className='primary'; next.textContent = '次へ'; next.disabled = true;
+    const back = document.createElement('button'); back.textContent = '戻る'; back.disabled = (idx===0);
+
+    next.addEventListener('click',()=>{ idx++; update(); });
+    back.addEventListener('click',()=>{ if(idx>0){ idx--; update(); } });
+
+    nav.appendChild(back); nav.appendChild(next);
+
+    card.appendChild(qno); card.appendChild(q); card.appendChild(ul); card.appendChild(exp); card.appendChild(nav);
+    $quiz.appendChild(card);
+
+    function select(choiceIndex, li){
+      if(answered[qi]) return;
+      answered[qi] = true;
+      const lis = ul.querySelectorAll('li');
+      lis.forEach((el,i)=>{
+        const isCorrect = correct.includes(i);
+        if(isCorrect) el.classList.add('correct');
+        if(i===choiceIndex && !isCorrect) el.classList.add('wrong');
+      });
+      const mark = document.createElement('span'); mark.className='rmark';
+      const ok = correct.includes(choiceIndex);
+      mark.textContent = ok ? '◯' : '×'; mark.style.color = ok ? 'var(--ok)' : 'var(--err)';
+      li.prepend(mark);
+      if(ok){ score++; $score.textContent = score; }
+      exp.classList.add('show');
+      next.disabled = false;
+    }
+
+    updateHUD();
+  }
+
+  function updateHUD(){
+    $progress.textContent = (idx) + ' / ' + qbank.length;
+    const ratio = (idx / qbank.length) * 100; $bar.style.width = ratio + '%';
+  }
+
+  function update(){ render(); }
+
+  document.getElementById('btnShuffle').addEventListener('click',()=>{
+    order = shuffle(order); idx = 0; score = 0; answered.fill(false); $score.textContent = '0'; update();
+  });
+  document.getElementById('btnToggleMode').addEventListener('click',()=>{
+    modeExam = !modeExam; $modePill.textContent = modeExam ? '試験モード' : '学習モード';
+  });
+  document.getElementById('btnRestart').addEventListener('click',()=>{
+    idx = 0; score = 0; answered.fill(false); $score.textContent='0'; update();
+  });
+
+  update();
 })();
 </script>
 </body>
