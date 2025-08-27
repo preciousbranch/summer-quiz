@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>夏期課題100問クイズ</title>
+<style>
+/* 省略（前回と同じCSS） */
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 省略（ヘッダーやHUD部分は同じ） -->
+  <section id="quiz"></section>
+  <section id="done" class="card result hide">
+    <h2>お疲れさまです！</h2>
+    <p>スコア：<b id="finalScore">0 / 100</b></p>
+    <p class="muted">「最初から」を押すと、やり直しできます。</p>
+  </section>
+</div>
+
+<script>
+(function(){
+  const qbank = [
+    // ... 省略 ...
+
+    // === 歯科保健指導論I（6） ===
+    {q:"保健指導：対象の()を育て行動変容を促す専門的指導。", c:["主体性","体力","競争心","規律"], a:0, e:"主体性。"},
+    {q:"術前・術中・術後を含む期間を何という？", c:["周術期","観察期","回復期","維持期"], a:0, e:"周術期。"},
+    {q:"WHOの健康定義で正しいのは？", c:["疾病がない状態のみ","完全な身体的・精神的・社会的な健康","医療へのアクセス","平均余命が長いこと"], a:1, e:"WHO定義は『完全な身体的・精神的・社会的な健康』。"},
+    {q:"ヘルスプロモーションで正しい(2つ)", c:["発展途上国限定","健康日本21の基盤","健康のコントロールを可能に","倫理規範のこと"], a:[1,2], e:"HPは自ら健康を管理する力。"},
+    {q:"保健活動：ポピュレーションアプローチ(2つ)", c:["高校生の食育","喫煙者の禁煙指導","糖尿病予備軍の栄養指導","高齢群の口腔機能教室"], a:[0,3], e:"集団全体を対象。"},
+    {q:"面接技法：会話例で用いたのは？(2つ)", c:["傾聴","動機づけ","オープンクエスチョン","クローズド"], a:[0,2], e:"傾聴＋開かれた質問。"}
+  ];
+
+  // ... 省略（残りのJSロジックは同じ） ...
+})();
+</script>
+</body>
+</html>
